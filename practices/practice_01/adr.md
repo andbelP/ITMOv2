@@ -33,11 +33,22 @@
 ## Архитектурная схема
 
 ```mermaid
-flowchart LR
-    Input[Вход] --> Service[Сервис]
-    Service --> AI[LLM]
-    AI --> Check[Проверка человеком]
-    Check --> Result[Результат]
+graph LR
+    Input[Diff PR] --> Redact[Secret redactor SEC-1]
+    Redact --> Len{Diff length <= 20000?}
+    Len-->|no|HTTP413[HTTP 413]
+    Len-->|yes|LLM[LLM call timeout 10s REL-1]
+    LLM-->|timeout or error|Controlled[Контролируемый ответ REL-1]
+    LLM --> Format[OUT-1 summary/risks/checks]
+    Controlled --> Format
+    Format --> Human[Проверка человеком QA-1 SCOPE-1]
+    Human --> Result[Ответ пользователю]
+
+    Logger[Logger] -.-> Redact
+    Logger -.-> LLM
+    Logger -.-> Result
+    %% API-1: ограничение размера входного diff
+    %% OBS-1: логировать только request_id, длительность и статус; без diff/контента
 ```
 
 ## Как использовали AI
