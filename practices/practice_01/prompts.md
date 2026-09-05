@@ -6,7 +6,7 @@
 |---|---|---|---|---|---|---|---|---|
 | P1-01 | Baseline-ревью `TRAINING_PR.diff` | OpenCode / gpt-5 (analysis) | zero-shot | Ниже diff учебного PR. Посмотри PR и найди проблемы. | Резюме: добавлен POST `/api/reviews` и метод `ReviewService.review`; ответ `{"comment": ...}`. Найдены риски: OUT-1 несоответствие формата; SEC-1 отсутствие редактирования секретов; API-1 нет ограничителя длины diff. | Принято: (1) OUT-1 нарушен — `review_service` возвращает `{"comment": ...}` вместо `summary/risks/checks` (app/review_service.py:19–22); (2) SEC-1 — в prompt передают diff без редактирования (app/review_service.py:19–21); (3) API-1 — нет HTTP 413 для длинных diff (app/api.py:35–37). | Отклонено: предположения о версии Python и `app.dependencies`; вывод про синхронность/пул; «тесты отсутствуют» — нет evidence в diff и нет прямого правила (QA-1). | CASE.md правила (OUT-1, SEC-1, API-1) + diff-линии: app/review_service.py:19–22, app/api.py:35–37; проверка формата ответа против OUT-1. |
 | P1-02 | Повторное ревью с master prompt | OpenCode / gpt-5 | master prompt | Master Prompt v1 + TRAINING_PR.diff | См. «P1-02 Result» ниже | Принято: (1) SEC-1 — передача diff в LLM без редактирования (app/review_service.py, вызов generate(prompt)); (2) API-1 — нет ограничителя длины и 413 в /api/reviews; (3) REL-1 — отсутствие таймаута/обработки ошибок вокруг llm.generate | Исправлено: уточнили evidence и приблизительные номера строк по diff; иные предположения не включались | Сопоставили с CASE.md (SEC-1, API-1, REL-1) и TRAINING_PR.diff; проверка формата ответа по OUT-1 |
-| P1-03 |  |  |  |  |  |  |  |  |
+| P1-03 | Черновики ADR, product_management, project_management, tests_* | OpenCode / gpt-5 | structured prompt | См. «P1-03 Prompt» ниже | Черновики артефактов обновлены: adr.md, product_management.md, project_management.md, tests_*.md | Принято: структура по CASE.md (SEC-1, API-1, REL-1, OUT-1, QA-1, SCOPE-1, OBS-1), обязательные секции (mermaid/gherkin), минимальные формулировки | Отклонено: любые допущения без evidence; избыточная детализация; изменения кода/репо | Проверили Makefile (practice_01 test), соответствие правилам CASE.md и ручной просмотр ссылок |
 
 ## Master Prompt v1
 
@@ -94,6 +94,22 @@
 | Вывод подтверждён diff или правилом | частично | да (SEC-1, API-1, REL-1 + diff) | доказательность выше |
 | Соблюдены границы AI | частично | да (SCOPE-1 соблюдены) | границы зафиксированы |
 | Есть воспроизводимая проверка | нет/частично | да (checks сформированы) | проверки воспроизводимы |
+
+## P1-03 Prompt
+
+Подготовь короткие рабочие черновики следующих артефактов, используя правила из CASE.md и контекст пары (SEC-1, API-1, REL-1, OUT-1, QA-1, SCOPE-1, OBS-1):
+- adr.md: контекст, решение, альтернативы, последствия/риск и архитектурная схема (Mermaid). Покажи, где enforced SEC-1, API-1, REL-1, OUT-1, QA-1/SCOPE-1, OBS-1.
+- product_management.md: первый сценарий, use case и блок Gherkin с позитивным и граничным кейсом.
+- project_management.md: 2–3 инкремента с наблюдаемыми результатами, ролями человека/AI и проверками; диаграмма Ганта (Mermaid).
+- tests_unit.md, tests_integration.md, tests_load.md, tests_e2e.md: по 1–2 минимальных, но проверяемых сценария с входами/ожидаемыми результатами и ссылкой на правило.
+
+Ограничения:
+- Кратко, по делу, без воды; не придумывай факты вне diff и CASE.md.
+- Не изменяй код/репозиторий; только текстовые черновики артефактов.
+- Сохраняй обязательные маркеры: заголовок «## TO BE», блоки ```mermaid и ```gherkin, «## Context Pack», метки P1‑01/P1‑02 в prompts.md.
+
+Формат ответа:
+- Для каждого файла: короткий список пунктов (что добавлено) и мини‑фрагмент содержимого (если применимо). Без полного переписывания документа.
 
 ## Peer review
 
