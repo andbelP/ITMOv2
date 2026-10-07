@@ -11,10 +11,10 @@
       },
       "models": {
         "itmo-agent": {
-          "name": "ITMO local 64k",
+          "name": "ITMO local 2k (qwen2.5:3b)",
           "limit": {
-            "context": 65536,
-            "output": 4096
+            "context": 2048,
+            "output": 512
           }
         }
       }
