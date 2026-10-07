@@ -1,4 +1,14 @@
-FROM qwen3.5:4b
-PARAMETER num_ctx 65536
+FROM qwen2.5:3b
+PARAMETER num_ctx 2048
+PARAMETER num_thread 8
 PARAMETER temperature 0.2
+SYSTEM """Strictly speak and answer ONLY in Russian (на русском языке). 
+Never use Chinese or other languages.
+Отвечай исключительно на русском языке."""
+
+
+
+
+
+
 
