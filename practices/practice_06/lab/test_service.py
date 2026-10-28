@@ -74,6 +74,94 @@ class ShopTest(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertIn("TEST_ALICE", result["content"])
 
+    def test_security_sql_injection_profile_blocked(self):
+        auth = self.login()
+        status, _ = self.request("GET", "/profile?id=1%20UNION%20SELECT%20999,%27INJECTED%27,%27leak%27,%27secret%27", headers=auth)
+        self.assertEqual(status, 400)
+
+    def test_security_sql_injection_search_parameterized(self):
+        auth = self.login()
+        status, result = self.request("GET", "/search?q=%27%20OR%201=1%20--", headers=auth)
+        self.assertEqual(status, 200)
+        self.assertEqual(len(result), 0)
+
+    def test_security_idor_profile_denied(self):
+        alice = self.login("alice", "learn-alice")
+        status, _ = self.request("GET", "/profile?id=2", headers=alice)
+        self.assertEqual(status, 403)
+
+    def test_security_unauthenticated_orders_denied(self):
+        status, _ = self.request("GET", "/orders")
+        self.assertEqual(status, 401)
+
+    def test_security_orders_isolated_by_owner(self):
+        alice, bob = self.login("alice", "learn-alice"), self.login("bob", "learn-bob")
+        status, alice_orders = self.request("GET", "/orders", headers=alice)
+        self.assertEqual(status, 200)
+        self.assertTrue(all(o["owner"] == 1 for o in alice_orders))
+        status, bob_orders = self.request("GET", "/orders", headers=bob)
+        self.assertEqual(status, 200)
+        self.assertTrue(all(o["owner"] == 2 for o in bob_orders))
+
+    def test_security_fake_staff_header_rejected(self):
+        status, _ = self.request("GET", "/admin/export", headers={"X-Role": "staff"})
+        self.assertEqual(status, 403)
+        auth = {**self.login("alice", "learn-alice"), "X-Role": "staff"}
+        status, _ = self.request("GET", "/admin/export", headers=auth)
+        self.assertEqual(status, 403)
+
+    def test_security_price_tampering_prevented(self):
+        auth = self.login("alice", "learn-alice")
+        status, order = self.request("POST", "/orders", {"product": "chair", "price": 0.01}, auth)
+        self.assertEqual(status, 201)
+        self.assertEqual(order["price"], 5000)
+
+    def test_security_path_traversal_blocked(self):
+        auth = self.login("alice", "learn-alice")
+        status, _ = self.request("GET", "/files?user=..&path=private/operator-note.txt", headers=auth)
+        self.assertIn(status, (400, 403))
+        status, _ = self.request("GET", "/files?path=../operator-note.txt", headers=auth)
+        self.assertEqual(status, 400)
+
+    def test_security_cross_user_file_access_denied(self):
+        alice = self.login("alice", "learn-alice")
+        status, _ = self.request("GET", "/files?user=bob&path=receipt.txt", headers=alice)
+        self.assertEqual(status, 403)
+
+    def test_security_stored_xss_escaped(self):
+        auth = self.login("alice", "learn-alice")
+        self.request("POST", "/reviews", {"product": "chair", "text": "<script>alert('xss')</script>"}, auth)
+        status, html_content = self.request("GET", "/reviews/view", headers=auth)
+        self.assertEqual(status, 200)
+        self.assertNotIn("<script>", html_content)
+        self.assertIn("&lt;script&gt;", html_content)
+
+    def test_security_logs_masked_and_restricted(self):
+        self.request("POST", "/login", {"username": "alice", "password": "learn-alice"})
+        alice = self.login("alice", "learn-alice")
+        self.assertEqual(self.request("GET", "/debug/logs", headers=alice)[0], 403)
+        staff = self.login("staff", "learn-staff")
+        status, logs = self.request("GET", "/debug/logs", headers=staff)
+        self.assertEqual(status, 200)
+        logs_str = str(logs)
+        self.assertNotIn("learn-alice", logs_str)
+        self.assertIn("***", logs_str)
+
+    def test_security_assistant_execute_strictly_authorized(self):
+        status, _ = self.request("POST", "/assistant/execute", {
+            "decision": {"tool": "read_file", "arguments": {"path": "files/alice/receipt.txt"}}
+        })
+        self.assertEqual(status, 401)
+        alice = self.login("alice", "learn-alice")
+        status, _ = self.request("POST", "/assistant/execute", {
+            "decision": {"tool": "delete_tree", "arguments": {"path": "files"}}
+        }, alice)
+        self.assertEqual(status, 403)
+        status, _ = self.request("POST", "/assistant/execute", {
+            "decision": {"tool": "read_file", "arguments": {"path": "files/bob/receipt.txt"}}
+        }, alice)
+        self.assertEqual(status, 403)
+
 
 class SandboxTest(unittest.TestCase):
     def setUp(self):
