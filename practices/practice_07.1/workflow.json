@@ -1,0 +1,520 @@
+{
+  "name": "My workflow 40 (with Deduplication)",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/andbelP/test-pr-review/pulls/{{ $json.pr_number }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3.diff"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4f459810-6180-4d6e-ac3b-097ae6d44889",
+      "name": "Get file's PR info",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        600,
+        48
+      ],
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "62aX7VTPlhTD4kqA",
+          "name": "Bearer Auth account 22"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-6-luna",
+          "mode": "list",
+          "cachedResultName": "gpt-6-luna"
+        },
+        "options": {}
+      },
+      "id": "3222a9f5-262f-4570-8b08-8893447ac2c3",
+      "name": "OpenAI Chat Model1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1100,
+        360
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "H5cQgxrXt9XnE5JF",
+          "name": "OpenAI account 25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "andbelP",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list",
+          "cachedResultName": "test-pr-review",
+          "cachedResultUrl": "https://github.com/andbelP/test-pr-review"
+        },
+        "issueNumber": "={{ $('Code in JavaScript').item.json.pr_number }}",
+        "editFields": {
+          "labels": [
+            {
+              "label": "ReviewedByAI"
+            }
+          ]
+        }
+      },
+      "id": "e7591c8b-689f-4b1f-8f5e-364d236b79d2",
+      "name": "Add Label to PR1",
+      "type": "n8n-nodes-base.github",
+      "position": [
+        1700,
+        48
+      ],
+      "webhookId": "70d2db56-965b-4f1f-817c-1fbb311320c0",
+      "typeVersion": 1,
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a senior Python developer.\nВ начале своего ответа обязательно добавь заголовок:\n### 🤖 Ревью от основной модели (GPT-6 Luna)\n\nСделай code review ТОЛЬКО изменённых строк в diff.\nНайди:\n\t•\tбаги\n\t•\tпроблемы безопасности\n\t•\tрегрессии\n\t•\tпроблемы производительности\n\t•\tнарушения best practices\n\nДай конкретные рекомендации и примеры исправлений.\n\n{{ $json.data }}",
+        "options": {
+          "systemMessage": ""
+        }
+      },
+      "id": "13d8e974-08e4-4c7b-859c-91eca91e2ef9",
+      "name": "Code Review Agent1",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1100,
+        200
+      ],
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "owner": {
+          "__rl": true,
+          "value": "andbelP",
+          "mode": "list",
+          "cachedResultName": "andbelP",
+          "cachedResultUrl": "https://github.com/andbelP"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list",
+          "cachedResultName": "test-pr-review",
+          "cachedResultUrl": "https://github.com/andbelP/test-pr-review"
+        },
+        "events": [
+          "pull_request"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        -32
+      ],
+      "id": "6942676e-4d77-4610-bb33-262e4dbe1537",
+      "name": "Github Trigger",
+      "webhookId": "ad9784fb-4815-436c-96f0-58183b452116",
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "review",
+        "owner": {
+          "__rl": true,
+          "mode": "name",
+          "value": "andbelP"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list"
+        },
+        "pullRequestNumber": "={{ $('Code in JavaScript').item.json.pr_number }}",
+        "event": "comment",
+        "body": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1.1,
+      "position": [
+        1460,
+        48
+      ],
+      "id": "6cb4ac5d-4938-4581-a0ba-8faca10c23e7",
+      "name": "Create a review",
+      "webhookId": "4a2b456b-5f2b-4e6e-b484-804041641b1a",
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "owner": {
+          "__rl": true,
+          "value": "andbelP",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list",
+          "cachedResultName": "test-pr-review",
+          "cachedResultUrl": "https://github.com/andbelP/test-pr-review"
+        },
+        "events": [
+          "issue_comment"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        -608,
+        208
+      ],
+      "id": "dd459f39-97bb-473b-91e9-b2a83e14ac54",
+      "name": "Github Trigger1",
+      "webhookId": "2612c22e-22f4-4e2f-99a9-21802c4c0487",
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body;\n\n// 1. Открытие или переоткрытие PR (основная модель)\nif (body.action === 'opened' || body.action === 'reopened') {\n  return [{ json: { pr_number: body.number, model_type: 'main' } }];\n}\n\n// 2. Команда /make_other_ai_review (вторая модель)\nif (body.action === 'created' && body.comment?.body?.includes('/make_other_ai_review')) {\n  return [{ json: { pr_number: body.issue.number, model_type: 'other' } }];\n}\n\n// 3. Команда /make_ai_review (основная модель)\nif (body.action === 'created' && body.comment?.body?.includes('/make_ai_review')) {\n  return [{ json: { pr_number: body.issue.number, model_type: 'main' } }];\n}\n\n// Игнорируем закрытие PR и любые другие комментарии\nreturn [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        160,
+        48
+      ],
+      "id": "3019a65f-8ca0-4eeb-be93-155f334af35a",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "57abb0dc-faaf-4717-99be-0bbf22948244",
+              "leftValue": "={{ $('Code in JavaScript').item.json.model_type }}",
+              "rightValue": "other",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f0f5ad1e-522f-4dba-8ae4-91fe82e3a95d",
+      "name": "Check Model Choice",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        820,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-6.1-terra",
+          "mode": "list",
+          "cachedResultName": "gpt-6.1-terra"
+        },
+        "options": {}
+      },
+      "id": "17b7cc46-6132-4562-a7c5-bfc7b05bb585",
+      "name": "OpenAI Chat Model - Terra",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1100,
+        -280
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "H5cQgxrXt9XnE5JF",
+          "name": "OpenAI account 25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a senior Python developer.\nВ начале своего ответа обязательно добавь заголовок:\n### 🤖 Ревью от второй модели (GPT-6.1 Terra)\n\nСделай code review ТОЛЬКО изменённых строк в diff.\nНайди:\n\t•\tбаги\n\t•\tпроблемы безопасности\n\t•\tрегрессии\n\t•\tпроблемы производительности\n\t•\tнарушения best practices\n\nДай конкретные рекомендации и примеры исправлений.\n\n{{ $json.data }}",
+        "options": {
+          "systemMessage": ""
+        }
+      },
+      "id": "1c3662f0-6b90-45c4-a75a-42e91b7516a6",
+      "name": "Code Review Agent - Terra",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1100,
+        -120
+      ],
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "operation": "rowNotExists",
+        "dataTableId": {
+          "__rl": true,
+          "value": "pr_reviews",
+          "mode": "name"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "pr_id",
+              "condition": "equals",
+              "keyValue": "={{ $('Code in JavaScript').item.json.pr_number }}"
+            }
+          ]
+        }
+      },
+      "id": "c674bcc6-05d4-45ea-92bc-80aa340ac365",
+      "name": "Check PR in Data Table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        380,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "pr_reviews",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "pr_id": "={{ $('Code in JavaScript').item.json.pr_number }}"
+          }
+        }
+      },
+      "id": "c77b799b-5a40-4e5e-88f3-6cce0819b79c",
+      "name": "Save PR to Data Table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1940,
+        48
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get file's PR info": {
+      "main": [
+        [
+          {
+            "node": "Check Model Choice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Code Review Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Review Agent1": {
+      "main": [
+        [
+          {
+            "node": "Create a review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Github Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a review": {
+      "main": [
+        [
+          {
+            "node": "Add Label to PR1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Github Trigger1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Check PR in Data Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Model Choice": {
+      "main": [
+        [
+          {
+            "node": "Code Review Agent - Terra",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code Review Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Review Agent - Terra": {
+      "main": [
+        [
+          {
+            "node": "Create a review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model - Terra": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Code Review Agent - Terra",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check PR in Data Table": {
+      "main": [
+        [
+          {
+            "node": "Get file's PR info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Label to PR1": {
+      "main": [
+        [
+          {
+            "node": "Save PR to Data Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "a7f143fd-1860-46d2-9321-cd4de16cb778",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "68dbbb4e8fa686c3fd4e9982ade6836edb66976f207553e7ac22df961581c78c"
+  },
+  "nodeGroups": [],
+  "id": "sFNjTdaFARwxme8S",
+  "tags": []
+}
