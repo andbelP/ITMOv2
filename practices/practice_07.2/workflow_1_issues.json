@@ -1,0 +1,544 @@
+{
+  "name": "Workflow 1: Issue Classification & Escalation",
+  "nodes": [
+    {
+      "parameters": {
+        "owner": {
+          "__rl": true,
+          "value": "andbelP",
+          "mode": "list",
+          "cachedResultName": "andbelP",
+          "cachedResultUrl": "https://github.com/andbelP"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list",
+          "cachedResultName": "test-pr-review",
+          "cachedResultUrl": "https://github.com/andbelP/test-pr-review"
+        },
+        "events": [
+          "issues"
+        ]
+      },
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        -200,
+        260
+      ],
+      "id": "b0000001-0001-4000-8000-000000000001",
+      "name": "GitHub Trigger",
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\n\n// Обрабатываем только открытие нового Issue\nif (body.action !== 'opened' || !body.issue) {\n  return [];\n}\n\nreturn [{\n  json: {\n    issue_number: body.issue.number,\n    title: body.issue.title || '',\n    body: body.issue.body || '',\n    user: body.issue.user ? body.issue.user.login : 'anonymous'\n  }\n}];"
+      },
+      "id": "b0000001-0001-4000-8000-000000000002",
+      "name": "Filter opened issues",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        40,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Sub-workflow: AI Issue Classifier"
+        }
+      },
+      "id": "b0000001-0001-4000-8000-000000000003",
+      "name": "Execute Sub-workflow",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.1,
+      "position": [
+        280,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const issueData = $('Filter opened issues').first().json;\nconst subResult = $input.first().json;\n\nconst rawType = subResult.type || subResult.classification || subResult.issue_type || subResult.category || 'unknown';\nconst type = String(rawType).toLowerCase().trim();\n\nlet conf = 0.5;\nif (typeof subResult.confidence === 'number') {\n  conf = subResult.confidence;\n} else if (subResult.confidence !== undefined) {\n  conf = parseFloat(subResult.confidence) || 0.5;\n}\n\n// Эскалация: confidence < 0.8 или неизвестный тип -> needs-triage\nlet route = 'needs-triage';\nif (conf >= 0.8 && ['bug', 'task', 'feature'].includes(type)) {\n  route = type;\n}\n\nreturn [{\n  json: {\n    issue_number: issueData.issue_number,\n    title: issueData.title,\n    body: issueData.body,\n    user: issueData.user,\n    type: type,\n    confidence: conf,\n    confidence_percent: Math.round(conf * 100),\n    route: route\n  }\n}];"
+      },
+      "id": "b0000001-0001-4000-8000-000000000004",
+      "name": "Route Decision",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "needs-triage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "bug",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "task",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.route }}",
+                    "rightValue": "feature",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        }
+      },
+      "id": "b0000001-0001-4000-8000-000000000005",
+      "name": "Switch: Route by Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        760,
+        260
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "issue",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "andbelP",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list",
+          "cachedResultName": "test-pr-review",
+          "cachedResultUrl": "https://github.com/andbelP/test-pr-review"
+        },
+        "issueNumber": "={{ $json.issue_number }}",
+        "editFields": {
+          "labels": [
+            {
+              "label": "needs-triage"
+            }
+          ]
+        }
+      },
+      "id": "b0000001-0001-4000-8000-000000000006",
+      "name": "Add Label: needs-triage",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        60
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "issue",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "andbelP",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list",
+          "cachedResultName": "test-pr-review",
+          "cachedResultUrl": "https://github.com/andbelP/test-pr-review"
+        },
+        "issueNumber": "={{ $json.issue_number }}",
+        "editFields": {
+          "labels": [
+            {
+              "label": "bug"
+            }
+          ]
+        }
+      },
+      "id": "b0000001-0001-4000-8000-000000000007",
+      "name": "Add Label: bug",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        180
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "issue",
+        "operation": "createComment",
+        "owner": {
+          "__rl": true,
+          "value": "andbelP",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list",
+          "cachedResultName": "test-pr-review",
+          "cachedResultUrl": "https://github.com/andbelP/test-pr-review"
+        },
+        "issueNumber": "={{ $json.issue_number }}",
+        "body": "=🤖 **AI Triage**: Обращение классифицировано как **Bug** (уверенность: {{ $json.confidence_percent }}%).\n\nСпасибо за репорт! Пожалуйста, проверьте наличие шагов воспроизведения и логов ошибки."
+      },
+      "id": "b0000001-0001-4000-8000-000000000008",
+      "name": "Comment: Bug",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        1260,
+        180
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "issue",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "andbelP",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list",
+          "cachedResultName": "test-pr-review",
+          "cachedResultUrl": "https://github.com/andbelP/test-pr-review"
+        },
+        "issueNumber": "={{ $json.issue_number }}",
+        "editFields": {
+          "labels": [
+            {
+              "label": "task"
+            }
+          ]
+        }
+      },
+      "id": "b0000001-0001-4000-8000-000000000009",
+      "name": "Add Label: task",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        320
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "issue",
+        "operation": "createComment",
+        "owner": {
+          "__rl": true,
+          "value": "andbelP",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list",
+          "cachedResultName": "test-pr-review",
+          "cachedResultUrl": "https://github.com/andbelP/test-pr-review"
+        },
+        "issueNumber": "={{ $json.issue_number }}",
+        "body": "=🤖 **AI Triage**: Обращение классифицировано как **Task** (уверенность: {{ $json.confidence_percent }}%).\n\nЗадача принята в бэклог команды."
+      },
+      "id": "b0000001-0001-4000-8000-000000000010",
+      "name": "Comment: Task",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        1260,
+        320
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "issue",
+        "operation": "edit",
+        "owner": {
+          "__rl": true,
+          "value": "andbelP",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list",
+          "cachedResultName": "test-pr-review",
+          "cachedResultUrl": "https://github.com/andbelP/test-pr-review"
+        },
+        "issueNumber": "={{ $json.issue_number }}",
+        "editFields": {
+          "labels": [
+            {
+              "label": "feature"
+            }
+          ]
+        }
+      },
+      "id": "b0000001-0001-4000-8000-000000000011",
+      "name": "Add Label: feature",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        460
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "issue",
+        "operation": "createComment",
+        "owner": {
+          "__rl": true,
+          "value": "andbelP",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "test-pr-review",
+          "mode": "list",
+          "cachedResultName": "test-pr-review",
+          "cachedResultUrl": "https://github.com/andbelP/test-pr-review"
+        },
+        "issueNumber": "={{ $json.issue_number }}",
+        "body": "=🤖 **AI Triage**: Обращение классифицировано как **Feature Request** (уверенность: {{ $json.confidence_percent }}%).\n\nСпасибо за предложение! Идея передана команде для оценки."
+      },
+      "id": "b0000001-0001-4000-8000-000000000012",
+      "name": "Comment: Feature",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 1,
+      "position": [
+        1260,
+        460
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "GitHub Trigger": {
+      "main": [
+        [
+          {
+            "node": "Filter opened issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter opened issues": {
+      "main": [
+        [
+          {
+            "node": "Execute Sub-workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Sub-workflow": {
+      "main": [
+        [
+          {
+            "node": "Route Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Decision": {
+      "main": [
+        [
+          {
+            "node": "Switch: Route by Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch: Route by Type": {
+      "main": [
+        [
+          {
+            "node": "Add Label: needs-triage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add Label: bug",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Comment: Bug",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add Label: task",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Comment: Task",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add Label: feature",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Comment: Feature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

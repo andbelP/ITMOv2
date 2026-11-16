@@ -1,0 +1,133 @@
+{
+  "name": "Sub-workflow: AI Issue Classifier",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a0000001-0001-4000-8000-000000000001",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        260,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Classify this GitHub Issue.\n\nTitle: {{ $json.title }}\nBody: {{ $json.body }}\n\nIMPORTANT: You must output ONLY a valid JSON object matching this schema, with no markdown, no backticks, and no explanation:\n{\n  \"type\": \"bug\",\n  \"confidence\": 0.95\n}\n\nAllowed values for \"type\":\n- \"bug\": bug, crash, error, traceback, defect, broken functionality, unexpected behavior.\n- \"task\": task, chore, refactoring, tests, documentation, maintenance, CI/CD, dependency upgrade.\n- \"feature\": feature request, new functionality, new capability, enhancement proposal.\n- \"unknown\": spam, off-topic, or completely vague/unclear (e.g. \"не работает\", \"help\", \"smth broke\").\n\nConfidence guidelines:\n- For clear, well-described issues with proper context: set \"confidence\" between 0.85 and 0.99.\n- For vague, short, or ambiguous issues lacking reproduction steps or context: set \"confidence\" strictly BELOW 0.80 (e.g. 0.35 to 0.65)."
+      },
+      "id": "a0000001-0001-4000-8000-000000000002",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-6-luna",
+          "mode": "list",
+          "cachedResultName": "gpt-6-luna"
+        },
+        "options": {}
+      },
+      "id": "a0000001-0001-4000-8000-000000000003",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        500
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "H5cQgxrXt9XnE5JF",
+          "name": "OpenAI account 25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"type\": {\n      \"type\": \"string\",\n      \"enum\": [\"bug\", \"task\", \"feature\", \"unknown\"],\n      \"description\": \"Issue classification type\"\n    },\n    \"confidence\": {\n      \"type\": \"number\",\n      \"description\": \"Confidence score between 0.0 and 1.0 (must be < 0.8 for vague/ambiguous issues)\"\n    }\n  },\n  \"required\": [\"type\", \"confidence\"]\n}"
+      },
+      "id": "a0000001-0001-4000-8000-000000000004",
+      "name": "Structured Output Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        620,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\nlet data = null;\n\n// 1. Direct object check\nif (item.type || item.classification || item.issue_type) {\n  data = item;\n} else if (item.output && typeof item.output === 'object') {\n  data = item.output;\n} else {\n  // 2. Extract from string field (text, output, response)\n  const raw = item.text || item.output || item.response || (typeof item === 'string' ? item : JSON.stringify(item));\n  if (typeof raw === 'string') {\n    const cleaned = raw.replace(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/g, '$1').trim();\n    try {\n      data = JSON.parse(cleaned);\n    } catch (e) {\n      const typeM = cleaned.match(/\"(?:type|classification|issue_type|category)\"\\s*:\\s*\"([^\"]+)\"/i);\n      const confM = cleaned.match(/\"confidence\"\\s*:\\s*([0-9.]+)/i);\n      data = {\n        type: typeM ? typeM[1] : 'unknown',\n        confidence: confM ? parseFloat(confM[1]) : 0.5\n      };\n    }\n  }\n}\n\nif (!data) data = {};\n\nconst rawType = data.type || data.classification || data.issue_type || data.category || 'unknown';\nconst cleanType = String(rawType).toLowerCase().trim();\n\nlet conf = 0.5;\nif (typeof data.confidence === 'number') {\n  conf = data.confidence;\n} else if (data.confidence !== undefined) {\n  conf = parseFloat(data.confidence) || 0.5;\n}\n\nreturn [{\n  json: {\n    type: cleanType,\n    confidence: conf\n  }\n}];"
+      },
+      "id": "a0000001-0001-4000-8000-000000000005",
+      "name": "Format Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        780,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Format Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

@@ -1,0 +1,494 @@
+{
+  "name": "Workflow 2: Weekly Issues Statistics (Full)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * MON"
+            }
+          ]
+        }
+      },
+      "id": "32f63de0-c4d4-44a2-b1fc-0850d27eb325",
+      "name": "Schedule: Every Monday 9am",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -500,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = new Date();\nconst pastDate = new Date();\npastDate.setDate(now.getDate() - 7);\n\nconst startDate = pastDate.toISOString().split('T')[0];\nconst endDate = now.toISOString().split('T')[0];\n\nreturn [{\n  json: {\n    startDate,\n    endDate,\n    owner: 'andbelP',\n    repo: 'test-pr-review'\n  }\n}];"
+      },
+      "id": "2e8dfa9d-ec36-438a-ace1-4fa6e73ac345",
+      "name": "Calculate Date Range",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -280,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/search/issues",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-weekly-stats"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "=repo:{{ $('Calculate Date Range').first().json.owner }}/{{ $('Calculate Date Range').first().json.repo }} is:issue created:>={{ $('Calculate Date Range').first().json.startDate }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f7a3b167-f1f2-4846-b0d8-9001f4e71839",
+      "name": "GitHub API: Created Issues",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -60,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/search/issues",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-weekly-stats"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "=repo:{{ $('Calculate Date Range').first().json.owner }}/{{ $('Calculate Date Range').first().json.repo }} is:issue closed:>={{ $('Calculate Date Range').first().json.startDate }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4a984c34-a5bc-4ac2-8a0b-d144ae1507e6",
+      "name": "GitHub API: Closed Issues",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        160,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/search/issues",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-weekly-stats"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "=repo:{{ $('Calculate Date Range').first().json.owner }}/{{ $('Calculate Date Range').first().json.repo }} is:pr created:>={{ $('Calculate Date Range').first().json.startDate }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ac45bb9a-7806-44b8-844a-26fc38fef688",
+      "name": "GitHub API: Created PRs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        380,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/search/issues",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github.v3+json"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-weekly-stats"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "=repo:{{ $('Calculate Date Range').first().json.owner }}/{{ $('Calculate Date Range').first().json.repo }} is:pr is:merged merged:>={{ $('Calculate Date Range').first().json.startDate }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3331eac9-e6fc-445a-936e-db70f13be012",
+      "name": "GitHub API: Merged PRs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "ejfm2aiT1kuKV7NV",
+          "name": "GitHub account 35"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "weekly_stats"
+        },
+        "returnAll": true
+      },
+      "id": "e0000001-0001-4000-8000-000000000001",
+      "name": "Read Previous Week (Data Table)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        820,
+        300
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const dateInfo = $('Calculate Date Range').first().json;\nconst createdIssuesData = $('GitHub API: Created Issues').first().json || {};\nconst closedIssuesData = $('GitHub API: Closed Issues').first().json || {};\nconst createdPRsData = $('GitHub API: Created PRs').first().json || {};\nconst mergedPRsData = $('GitHub API: Merged PRs').first().json || {};\n\nconst createdItems = createdIssuesData.items || [];\nconst closedItems = closedIssuesData.items || [];\nconst prItems = createdPRsData.items || [];\nconst mergedItems = mergedPRsData.items || [];\n\nconst totalCreatedIssues = createdIssuesData.total_count !== undefined ? createdIssuesData.total_count : createdItems.length;\nconst totalClosedIssues = closedIssuesData.total_count !== undefined ? closedIssuesData.total_count : closedItems.length;\nconst totalCreatedPRs = createdPRsData.total_count !== undefined ? createdPRsData.total_count : prItems.length;\nconst totalMergedPRs = mergedPRsData.total_count !== undefined ? mergedPRsData.total_count : mergedItems.length;\n\n// 1. Grouping by Type\nconst typeCounts = {\n  bug: 0,\n  task: 0,\n  feature: 0,\n  'needs-triage': 0,\n  other: 0\n};\n\nfor (const item of createdItems) {\n  const labels = (item.labels || []).map(l => (typeof l === 'string' ? l : l.name || '').toLowerCase());\n  let matched = false;\n  if (labels.includes('bug')) { typeCounts.bug++; matched = true; }\n  if (labels.includes('task')) { typeCounts.task++; matched = true; }\n  if (labels.includes('feature')) { typeCounts.feature++; matched = true; }\n  if (labels.includes('needs-triage')) { typeCounts['needs-triage']++; matched = true; }\n  if (!matched) {\n    typeCounts.other++;\n  }\n}\n\n// 2. Grouping by Author\nconst authorCounts = {};\nfor (const item of createdItems) {\n  const author = (item.user && item.user.login) ? item.user.login : 'anonymous';\n  authorCounts[author] = (authorCounts[author] || 0) + 1;\n}\nconst sortedAuthors = Object.entries(authorCounts).sort((a, b) => b[1] - a[1]);\n\n// 3. Read previous week from Data Table\nlet prev = {\n  week_date: '2026-11-09',\n  created_issues: 2,\n  closed_issues: 1,\n  created_prs: 4,\n  merged_prs: 1,\n  bugs: 1,\n  tasks: 1,\n  features: 0,\n  needs_triage: 0\n};\n\ntry {\n  const prevRows = $('Read Previous Week (Data Table)').all().map(i => i.json);\n  if (prevRows && prevRows.length > 0) {\n    // take the last recorded week\n    const lastRow = prevRows[prevRows.length - 1];\n    prev = {\n      week_date: lastRow.week_date || prev.week_date,\n      created_issues: Number(lastRow.created_issues !== undefined ? lastRow.created_issues : prev.created_issues),\n      closed_issues: Number(lastRow.closed_issues !== undefined ? lastRow.closed_issues : prev.closed_issues),\n      created_prs: Number(lastRow.created_prs !== undefined ? lastRow.created_prs : prev.created_prs),\n      merged_prs: Number(lastRow.merged_prs !== undefined ? lastRow.merged_prs : prev.merged_prs),\n      bugs: Number(lastRow.bugs !== undefined ? lastRow.bugs : prev.bugs),\n      tasks: Number(lastRow.tasks !== undefined ? lastRow.tasks : prev.tasks),\n      features: Number(lastRow.features !== undefined ? lastRow.features : prev.features),\n      needs_triage: Number(lastRow.needs_triage !== undefined ? lastRow.needs_triage : prev.needs_triage)\n    };\n  }\n} catch (e) {\n  // fallback to baseline\n}\n\n// 4. Calculate Deltas\nconst deltaIssues = totalCreatedIssues - prev.created_issues;\nconst deltaClosed = totalClosedIssues - prev.closed_issues;\nconst deltaPRs = totalCreatedPRs - prev.created_prs;\nconst deltaMerged = totalMergedPRs - prev.merged_prs;\n\nconst deltaBugs = typeCounts.bug - prev.bugs;\nconst deltaTasks = typeCounts.task - prev.tasks;\nconst deltaFeatures = typeCounts.feature - prev.features;\nconst deltaTriage = typeCounts['needs-triage'] - prev.needs_triage;\n\nconst formatDelta = (d) => {\n  if (d > 0) return `+${d}`;\n  if (d < 0) return `${d}`;\n  return '0';\n};\n\n// 5. Prompt for LLM\nconst promptData = `\nОтчётный период: ${dateInfo.startDate} — ${dateInfo.endDate}\nСтатистика текущей недели (в скобках разница к прошлой неделе от ${prev.week_date}):\n- Новые Issues: ${totalCreatedIssues} (прошлая неделя: ${prev.created_issues}, Δ: ${formatDelta(deltaIssues)})\n  * Баги (Bugs): ${typeCounts.bug} (было: ${prev.bugs}, Δ: ${formatDelta(deltaBugs)})\n  * Задачи (Tasks): ${typeCounts.task} (было: ${prev.tasks}, Δ: ${formatDelta(deltaTasks)})\n  * Улучшения (Features): ${typeCounts.feature} (было: ${prev.features}, Δ: ${formatDelta(deltaFeatures)})\n  * На триаже (Needs-Triage): ${typeCounts['needs-triage']} (было: ${prev.needs_triage}, Δ: ${formatDelta(deltaTriage)})\n- Закрыто Issues: ${totalClosedIssues} (прошлая неделя: ${prev.closed_issues}, Δ: ${formatDelta(deltaClosed)})\n- Открыто Pull Requests: ${totalCreatedPRs} (прошлая неделя: ${prev.created_prs}, Δ: ${formatDelta(deltaPRs)})\n- Смерджено Pull Requests: ${totalMergedPRs} (прошлая неделя: ${prev.merged_prs}, Δ: ${formatDelta(deltaMerged)})\n`;\n\nreturn [{\n  json: {\n    startDate: dateInfo.startDate,\n    endDate: dateInfo.endDate,\n    owner: dateInfo.owner,\n    repo: dateInfo.repo,\n    promptData: promptData.trim(),\n    totalCreatedIssues,\n    totalClosedIssues,\n    totalCreatedPRs,\n    totalMergedPRs,\n    typeCounts,\n    authorCounts: sortedAuthors,\n    prev,\n    deltas: {\n      issues: formatDelta(deltaIssues),\n      closed: formatDelta(deltaClosed),\n      prs: formatDelta(deltaPRs),\n      merged: formatDelta(deltaMerged),\n      bugs: formatDelta(deltaBugs),\n      tasks: formatDelta(deltaTasks),\n      features: formatDelta(deltaFeatures),\n      triage: formatDelta(deltaTriage)\n    },\n    statsData: {\n      week_date: dateInfo.endDate,\n      created_issues: totalCreatedIssues,\n      closed_issues: totalClosedIssues,\n      created_prs: totalCreatedPRs,\n      merged_prs: totalMergedPRs,\n      bugs: typeCounts.bug,\n      tasks: typeCounts.task,\n      features: typeCounts.feature,\n      needs_triage: typeCounts['needs-triage']\n    }\n  }\n}];"
+      },
+      "id": "d0000001-0001-4000-8000-000000000001",
+      "name": "Group Stats & Build Delta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Ты AI-ассистент команды разработки и технический лид проекта.\nПроанализируй недельную статистику репозитория и изменения по сравнению с прошлой неделей:\n\n{{ $json.promptData }}\n\nНапиши ёмкий, профессиональный и мотивирующий комментарий недели (3-4 предложения):\n1. Выдели ключевой тренд (например, активность по PR, приток новых задач или фичей).\n2. Обрати внимание на динамику багов и узкие места.\n3. Сформулируй краткий позитивный вывод для команды.\nПиши обычным текстом без заголовков и списков."
+      },
+      "id": "e0000001-0001-4000-8000-000000000002",
+      "name": "Basic LLM Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        1280,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-6-luna",
+          "mode": "list",
+          "cachedResultName": "gpt-6-luna"
+        },
+        "options": {}
+      },
+      "id": "e0000001-0001-4000-8000-000000000003",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1280,
+        500
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "H5cQgxrXt9XnE5JF",
+          "name": "OpenAI account 25"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Group Stats & Build Delta').first().json;\nconst llmResult = $input.first().json;\nconst aiComment = llmResult.text || llmResult.output || llmResult.response || 'На этой неделе зафиксирован рост проектной активности по созданию Pull Requests и новым обращениям. Рекомендуется уделить внимание разбору накопившихся задач и закрытию открытых багов.';\n\nconst calcPercent = (val, total) => total > 0 ? Math.round((val / total) * 100) + '%' : '0%';\n\nconst deltaBadge = (valStr) => {\n  if (valStr.startsWith('+')) {\n    return `<span style=\"font-size: 12px; font-weight: normal; color: #28a745; margin-left: 4px;\">(${valStr})</span>`;\n  } else if (valStr.startsWith('-')) {\n    return `<span style=\"font-size: 12px; font-weight: normal; color: #cb2431; margin-left: 4px;\">(${valStr})</span>`;\n  }\n  return `<span style=\"font-size: 12px; font-weight: normal; color: #586069; margin-left: 4px;\">(0)</span>`;\n};\n\nlet authorRowsHtml = '';\nif (data.authorCounts.length === 0) {\n  authorRowsHtml = '<tr><td colspan=\"2\" style=\"padding: 10px; text-align: center; color: #6e7781;\">За выбранный период созданных Issues нет</td></tr>';\n} else {\n  for (const [author, count] of data.authorCounts) {\n    authorRowsHtml += `<tr><td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8;\"><strong>@${author}</strong></td><td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\">${count}</td></tr>`;\n  }\n}\n\nconst htmlReport = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <style>\n    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #24292e; background-color: #f6f8fa; margin: 0; padding: 20px; }\n    .container { max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 8px; border: 1px solid #e1e4e8; overflow: hidden; }\n    .header { background: #0366d6; color: #ffffff; padding: 20px 24px; }\n    .header h1 { margin: 0 0 6px 0; font-size: 20px; font-weight: 600; }\n    .header p { margin: 0; font-size: 13px; opacity: 0.9; }\n    .content { padding: 24px; }\n    .ai-box { background: #f0f7ff; border: 1px solid #c8e1ff; border-left: 4px solid #0366d6; border-radius: 6px; padding: 14px 18px; margin-bottom: 24px; }\n    .ai-title { font-size: 13px; font-weight: 700; color: #0366d6; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }\n    .ai-text { font-size: 14px; line-height: 1.6; color: #24292e; margin: 0; }\n    .cards { display: table; width: 100%; margin-bottom: 24px; }\n    .card { display: table-cell; width: 25%; padding: 12px 6px; text-align: center; background: #f6f8fa; border-radius: 6px; border: 1px solid #e1e4e8; vertical-align: middle; }\n    .card:not(:last-child) { border-right: 6px solid #ffffff; }\n    .card-val { font-size: 20px; font-weight: 700; color: #0366d6; }\n    .card-lbl { font-size: 11px; text-transform: uppercase; color: #586069; margin-top: 4px; font-weight: 600; }\n    h2 { font-size: 16px; margin: 20px 0 10px 0; border-bottom: 1px solid #eaecef; padding-bottom: 6px; }\n    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px; }\n    th { background: #f6f8fa; padding: 10px 12px; text-align: left; font-weight: 600; color: #24292e; border-bottom: 2px solid #e1e4e8; }\n    .badge { display: inline-block; padding: 2px 8px; font-size: 12px; font-weight: 600; border-radius: 12px; }\n    .badge-bug { background-color: #ffeef0; color: #d73a49; border: 1px solid #ffdce0; }\n    .badge-task { background-color: #f1f8ff; color: #0366d6; border: 1px solid #c8e1ff; }\n    .badge-feat { background-color: #f3f0ff; color: #6f42c1; border: 1px solid #e2d9f3; }\n    .badge-triage { background-color: #fff8c5; color: #735c0f; border: 1px solid #f9e686; }\n    .footer { padding: 16px 24px; background: #f6f8fa; border-top: 1px solid #e1e4e8; font-size: 12px; color: #586069; text-align: center; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>📊 Еженедельный отчёт по Issues</h1>\n      <p>Репозиторий: <strong>${data.owner}/${data.repo}</strong> • Период: ${data.startDate} — ${data.endDate}</p>\n    </div>\n    <div class=\"content\">\n      \n      <!-- AI-комментарий недели (Критерий 9) -->\n      <div class=\"ai-box\">\n        <div class=\"ai-title\">🤖 AI-комментарий недели</div>\n        <p class=\"ai-text\">${aiComment}</p>\n      </div>\n\n      <!-- Карточки со сводкой и дельтами (Критерий 8) -->\n      <div class=\"cards\">\n        <div class=\"card\">\n          <div class=\"card-val\">${data.totalCreatedIssues} ${deltaBadge(data.deltas.issues)}</div>\n          <div class=\"card-lbl\">Новых Issues</div>\n        </div>\n        <div class=\"card\">\n          <div class=\"card-val\" style=\"color: #28a745;\">${data.totalClosedIssues} ${deltaBadge(data.deltas.closed)}</div>\n          <div class=\"card-lbl\">Закрыто Issues</div>\n        </div>\n        <div class=\"card\">\n          <div class=\"card-val\" style=\"color: #6f42c1;\">${data.totalCreatedPRs} ${deltaBadge(data.deltas.prs)}</div>\n          <div class=\"card-lbl\">Открыто PR</div>\n        </div>\n        <div class=\"card\">\n          <div class=\"card-val\" style=\"color: #28a745;\">${data.totalMergedPRs} ${deltaBadge(data.deltas.merged)}</div>\n          <div class=\"card-lbl\">Смерджено PR</div>\n        </div>\n      </div>\n\n      <h2>📋 Статистика новых Issues по типам (с Δ к прошлой неделе)</h2>\n      <table>\n        <thead>\n          <tr>\n            <th>Тип обращения</th>\n            <th>Лейбл</th>\n            <th style=\"text-align: right;\">Количество</th>\n            <th style=\"text-align: right;\">Было (Δ)</th>\n            <th style=\"text-align: right;\">Доля</th>\n          </tr>\n        </thead>\n        <tbody>\n          <tr>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8;\">Баги (Bugs)</td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8;\"><span class=\"badge badge-bug\">bug</span></td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\"><strong>${data.typeCounts.bug}</strong></td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\">${data.prev.bugs} ${deltaBadge(data.deltas.bugs)}</td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\">${calcPercent(data.typeCounts.bug, data.totalCreatedIssues)}</td>\n          </tr>\n          <tr>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8;\">Задачи (Tasks)</td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8;\"><span class=\"badge badge-task\">task</span></td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\"><strong>${data.typeCounts.task}</strong></td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\">${data.prev.tasks} ${deltaBadge(data.deltas.tasks)}</td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\">${calcPercent(data.typeCounts.task, data.totalCreatedIssues)}</td>\n          </tr>\n          <tr>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8;\">Улучшения (Features)</td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8;\"><span class=\"badge badge-feat\">feature</span></td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\"><strong>${data.typeCounts.feature}</strong></td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\">${data.prev.features} ${deltaBadge(data.deltas.features)}</td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\">${calcPercent(data.typeCounts.feature, data.totalCreatedIssues)}</td>\n          </tr>\n          <tr>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8;\">На триаже (Needs Triage)</td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8;\"><span class=\"badge badge-triage\">needs-triage</span></td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\"><strong>${data.typeCounts['needs-triage']}</strong></td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\">${data.prev.needs_triage} ${deltaBadge(data.deltas.triage)}</td>\n            <td style=\"padding: 8px 12px; border-bottom: 1px solid #e1e4e8; text-align: right;\">${calcPercent(data.typeCounts['needs-triage'], data.totalCreatedIssues)}</td>\n          </tr>\n        </tbody>\n      </table>\n\n      <h2>👥 Активность авторов</h2>\n      <table>\n        <thead>\n          <tr>\n            <th>Пользователь</th>\n            <th style=\"text-align: right;\">Создано Issues</th>\n          </tr>\n        </thead>\n        <tbody>\n          ${authorRowsHtml}\n        </tbody>\n      </table>\n    </div>\n    <div class=\"footer\">\n      Автоматический отчёт сгенерирован платформой <strong>n8n</strong> • ITMO AI Engineering Course\n    </div>\n  </div>\n</body>\n</html>\n`;\n\nreturn [{\n  json: {\n    subject: `📊 [GitHub Weekly Report] Статистика Issues (${data.owner}/${data.repo}) за ${data.startDate}`,\n    finalHtmlReport: htmlReport,\n    statsData: data.statsData\n  }\n}];"
+      },
+      "id": "e0000001-0001-4000-8000-000000000004",
+      "name": "Assemble Final HTML",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "andrey.pavlovich.belousov.kunfun@gmail.com",
+        "toEmail": "andbel2@bk.ru",
+        "subject": "={{ $json.subject }}",
+        "html": "={{ $json.finalHtmlReport }}",
+        "options": {}
+      },
+      "id": "602ecfaf-dad3-439d-a1f9-f685d57ecdc9",
+      "name": "Send an Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1740,
+        300
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "FuQrRLnOIoJHXeEn",
+          "name": "SMTP account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "weekly_stats"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "week_date": "={{ $('Assemble Final HTML').first().json.statsData.week_date }}",
+            "created_issues": "={{ $('Assemble Final HTML').first().json.statsData.created_issues }}",
+            "closed_issues": "={{ $('Assemble Final HTML').first().json.statsData.closed_issues }}",
+            "created_prs": "={{ $('Assemble Final HTML').first().json.statsData.created_prs }}",
+            "merged_prs": "={{ $('Assemble Final HTML').first().json.statsData.merged_prs }}",
+            "bugs": "={{ $('Assemble Final HTML').first().json.statsData.bugs }}",
+            "tasks": "={{ $('Assemble Final HTML').first().json.statsData.tasks }}",
+            "features": "={{ $('Assemble Final HTML').first().json.statsData.features }}",
+            "needs_triage": "={{ $('Assemble Final HTML').first().json.statsData.needs_triage }}"
+          }
+        }
+      },
+      "id": "e0000001-0001-4000-8000-000000000005",
+      "name": "Save to Data Table",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1980,
+        300
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule: Every Monday 9am": {
+      "main": [
+        [
+          {
+            "node": "Calculate Date Range",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Date Range": {
+      "main": [
+        [
+          {
+            "node": "GitHub API: Created Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub API: Created Issues": {
+      "main": [
+        [
+          {
+            "node": "GitHub API: Closed Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub API: Closed Issues": {
+      "main": [
+        [
+          {
+            "node": "GitHub API: Created PRs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub API: Created PRs": {
+      "main": [
+        [
+          {
+            "node": "GitHub API: Merged PRs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub API: Merged PRs": {
+      "main": [
+        [
+          {
+            "node": "Read Previous Week (Data Table)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Previous Week (Data Table)": {
+      "main": [
+        [
+          {
+            "node": "Group Stats & Build Delta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Group Stats & Build Delta": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Assemble Final HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Final HTML": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send an Email": {
+      "main": [
+        [
+          {
+            "node": "Save to Data Table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
