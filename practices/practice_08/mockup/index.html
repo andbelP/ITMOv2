@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AlgoPlace — Interactive UI Mockup (shadcn/ui)</title>
+  <style>
+    /* ═══════════════════════════════════════════
+       Design System: shadcn/ui + Tailwind tokens
+       Dark theme — AlgoPlace colour palette
+       ═══════════════════════════════════════════ */
+    :root {
+      /* Background layers */
+      --bg-base:       #0a0a0b;
+      --bg-card:       #111113;
+      --bg-muted:      #18181b;
+      --bg-accent:     #27272a;
+      /* Borders */
+      --border:        #27272a;
+      --border-hover:  #3f3f46;
+      --ring:          #6366f1;
+      /* Foreground */
+      --fg:            #fafafa;
+      --fg-muted:      #a1a1aa;
+      --fg-dim:        #71717a;
+      /* Status */
+      --emerald-400:   #34d399;
+      --emerald-500:   #10b981;
+      --emerald-900:   #064e3b;
+      --amber-400:     #fbbf24;
+      --amber-900:     #78350f;
+      --rose-400:      #fb7185;
+      --rose-500:      #f43f5e;
+      --rose-900:      #4c0519;
+      --indigo-400:    #818cf8;
+      --indigo-500:    #6366f1;
+      /* Radius — shadcn default */
+      --radius:        0.5rem;
+      --radius-lg:     0.75rem;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg-base);
+      color: var(--fg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── State switcher bar ─────────────────── */
+    .state-bar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; gap: 6px;
+      padding: 10px 16px;
+      background: var(--bg-muted);
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+    .state-bar .label {
+      font-size: 11px; font-weight: 600; color: var(--fg-dim);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-right: 6px;
+    }
+    .state-btn {
+      font-size: 12px; font-weight: 500;
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--fg-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .state-btn:hover { border-color: var(--border-hover); color: var(--fg); }
+    .state-btn.active {
+      background: var(--indigo-500);
+      border-color: var(--indigo-500);
+      color: #fff;
+    }
+
+    /* ── Navbar ──────────────────────────────── */
+    .navbar {
+      height: 48px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+    }
+    .navbar .brand {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 700; font-size: 15px; color: var(--fg);
+    }
+    .navbar .brand svg { color: var(--emerald-400); }
+    .navbar .user {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; color: var(--fg-muted);
+    }
+    .navbar .user .avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--indigo-500); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 11px;
+    }
+
+    /* ── Main workspace grid ────────────────── */
+    .workspace {
+      flex: 1; display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+    }
+    @media (max-width: 860px) {
+      .workspace { grid-template-columns: 1fr; }
+    }
+
+    /* ── Left pane — Problem description ────── */
+    .pane-left {
+      display: flex; flex-direction: column;
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .tab-bar {
+      display: flex; gap: 2px;
+      padding: 0 16px; padding-top: 8px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      font-size: 12px; font-weight: 500;
+      padding: 8px 14px;
+      color: var(--fg-dim);
+      border: none; background: none; cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .tab-btn.active { color: var(--fg); border-bottom-color: var(--emerald-500); }
+    .tab-btn:hover { color: var(--fg-muted); }
+
+    .problem-content {
+      flex: 1; overflow-y: auto; padding: 24px;
+    }
+    .problem-content h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .badge {
+      display: inline-flex; align-items: center;
+      font-size: 11px; font-weight: 600;
+      padding: 2px 10px; border-radius: 999px;
+      border: 1px solid;
+    }
+    .badge-easy { color: var(--emerald-400); background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.25); }
+    .badge-medium { color: var(--amber-400); background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.25); }
+    .badge-hard { color: var(--rose-400); background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.25); }
+    .category-label { font-size: 12px; color: var(--fg-dim); margin-top: 4px; }
+    .desc { font-size: 14px; line-height: 1.65; color: var(--fg-muted); margin-top: 16px; white-space: pre-line; }
+    .section-title {
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--fg-dim); margin: 20px 0 10px;
+    }
+    .example-card {
+      background: var(--bg-muted); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 14px;
+      font-family: "JetBrains Mono", "Fira Code", monospace; font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .example-card .label-io { color: var(--fg-dim); font-family: inherit; font-weight: 600; font-size: 11px; }
+    .example-card .val-output { color: var(--emerald-400); }
+    .constraint-list { list-style: disc inside; font-size: 12px; color: var(--fg-dim); font-family: monospace; }
+    .constraint-list li { margin-bottom: 4px; }
+
+    /* ── Right pane — Editor + Console ───────── */
+    .pane-right {
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Toolbar */
+    .editor-toolbar {
+      height: 42px; display: flex; align-items: center; justify-content: space-between;
+      padding: 0 14px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+    }
+    .toolbar-left { display: flex; align-items: center; gap: 8px; }
+    .toolbar-right { display: flex; align-items: center; gap: 8px; }
+
+    /* shadcn-style select */
+    .lang-select {
+      font-size: 12px; font-weight: 500;
+      padding: 4px 10px; border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-muted); color: var(--emerald-400);
+      cursor: pointer; outline: none;
+    }
+    .lang-select:focus { border-color: var(--ring); box-shadow: 0 0 0 2px rgba(99,102,241,0.25); }
+
+    /* shadcn-style Button (default, primary, destructive) */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 500;
+      padding: 6px 14px; border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--bg-muted); color: var(--fg);
+      cursor: pointer; transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn:hover { background: var(--bg-accent); border-color: var(--border-hover); }
+    .btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ring); }
+    .btn-primary {
+      background: var(--emerald-500); border-color: var(--emerald-500); color: #fff;
+    }
+    .btn-primary:hover { background: var(--emerald-400); border-color: var(--emerald-400); }
+    .btn-primary:disabled, .btn:disabled {
+      opacity: 0.5; cursor: not-allowed; pointer-events: none;
+    }
+
+    .icon { width: 14px; height: 14px; display: inline-block; vertical-align: middle; }
+    .small-btn {
+      padding: 4px; border-radius: var(--radius);
+      border: none; background: none; color: var(--fg-dim);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .small-btn:hover { color: var(--fg); background: var(--bg-accent); }
+    .small-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--ring); }
+
+    /* Editor placeholder */
+    .editor-area {
+      flex: 3; min-height: 240px;
+      background: var(--bg-base);
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+    .editor-area pre {
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 13px; line-height: 1.6;
+      color: var(--fg-muted); padding: 14px;
+      margin: 0; white-space: pre; overflow: auto; height: 100%;
+    }
+    .line-no { color: var(--fg-dim); display: inline-block; width: 30px; text-align: right; margin-right: 16px; user-select: none; }
+    .kw { color: #c678dd; }
+    .tp { color: #e5c07b; }
+    .cm { color: #5c6370; font-style: italic; }
+    .fn { color: #61afef; }
+    .st { color: #98c379; }
+    .nb { color: #d19a66; }
+
+    /* Console */
+    .console-area {
+      flex: 2; min-height: 160px;
+      display: flex; flex-direction: column;
+      background: rgba(17,17,19,0.6);
+      overflow: hidden;
+    }
+    .console-tabs {
+      height: 36px; display: flex; align-items: center; gap: 16px;
+      padding: 0 16px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px; font-weight: 500;
+    }
+    .console-tab {
+      border: none; background: none; cursor: pointer;
+      padding: 8px 0;
+      color: var(--fg-dim);
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .console-tab.active { color: var(--fg); border-bottom-color: var(--emerald-500); }
+    .console-body { flex: 1; overflow-y: auto; padding: 16px; font-size: 12px; }
+
+    /* Test case tabs */
+    .tc-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+    .tc-tab {
+      font-size: 11px; font-weight: 500;
+      padding: 4px 12px; border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: transparent; color: var(--fg-dim);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .tc-tab.active { background: var(--bg-accent); color: var(--fg); border-color: var(--border-hover); }
+
+    .io-block {
+      font-family: monospace; font-size: 12px;
+      background: var(--bg-base); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 12px;
+      color: var(--fg-muted); margin-top: 4px; margin-bottom: 12px;
+    }
+    .io-label { font-size: 11px; color: var(--fg-dim); font-weight: 500; }
+
+    /* ── State-specific panels ─────────────── */
+
+    /* Loading spinner */
+    .spinner-wrap {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px; gap: 12px; color: var(--fg-dim);
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 24px; height: 24px;
+      border: 2.5px solid var(--border);
+      border-top-color: var(--emerald-500);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* Verdict banner */
+    .verdict-banner {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg-muted); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+    .verdict-status { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 14px; }
+    .verdict-status.accepted { color: var(--emerald-400); }
+    .verdict-status.wrong { color: var(--rose-400); }
+    .verdict-metrics { display: flex; gap: 16px; font-size: 12px; color: var(--fg-dim); font-family: monospace; }
+
+    /* Success modal overlay */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-card {
+      background: var(--bg-card); border: 1px solid rgba(16,185,129,0.3);
+      border-radius: 16px; padding: 32px;
+      max-width: 420px; width: 100%;
+      text-align: center;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+    }
+    .modal-icon {
+      width: 64px; height: 64px; border-radius: 50%;
+      background: rgba(16,185,129,0.1); border: 2px solid var(--emerald-500);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px; color: var(--emerald-400);
+    }
+    .modal-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600;
+      padding: 4px 14px; border-radius: 999px;
+      background: rgba(16,185,129,0.1); color: var(--emerald-400);
+      border: 1px solid rgba(16,185,129,0.25);
+      margin-bottom: 8px;
+    }
+    .modal-card h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .modal-card p { font-size: 13px; color: var(--fg-muted); line-height: 1.5; margin-bottom: 20px; }
+    .modal-metrics {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      background: var(--bg-base); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 14px;
+      margin-bottom: 20px;
+    }
+    .modal-metrics .m-label { font-size: 10px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+    .modal-metrics .m-value { font-size: 14px; color: var(--emerald-400); font-family: monospace; font-weight: 700; margin-top: 2px; }
+    .modal-actions { display: flex; gap: 10px; }
+    .modal-actions .btn { flex: 1; justify-content: center; padding: 10px 16px; border-radius: var(--radius-lg); font-weight: 600; }
+
+    /* Error alert */
+    .error-alert {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: rgba(244,63,94,0.06);
+      border: 1px solid rgba(244,63,94,0.2);
+      border-radius: var(--radius); padding: 14px;
+      color: var(--rose-400); font-size: 13px;
+      margin-bottom: 14px;
+    }
+    .error-alert .retry-btn {
+      margin-top: 8px;
+      font-size: 12px; font-weight: 500;
+      padding: 4px 12px; border-radius: var(--radius);
+      border: 1px solid rgba(244,63,94,0.3);
+      background: transparent; color: var(--rose-400);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .error-alert .retry-btn:hover { background: rgba(244,63,94,0.1); }
+
+    /* Empty state */
+    .empty-state {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px; gap: 8px; color: var(--fg-dim);
+      text-align: center;
+    }
+    .empty-state .empty-icon { font-size: 32px; margin-bottom: 4px; opacity: 0.4; }
+
+    /* Test case result row */
+    .tc-result {
+      background: var(--bg-base); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 14px;
+      font-size: 12px; font-family: monospace; margin-bottom: 8px;
+    }
+    .tc-result-header {
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: -apple-system, sans-serif; margin-bottom: 6px;
+    }
+    .tc-result-header .tc-name { font-weight: 600; color: var(--fg); font-size: 12px; }
+    .tc-pill {
+      font-size: 10px; font-weight: 600;
+      padding: 2px 8px; border-radius: var(--radius);
+      border: 1px solid;
+    }
+    .tc-pill.passed { color: var(--emerald-400); background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.25); }
+    .tc-pill.failed { color: var(--rose-400); background: rgba(244,63,94,0.08); border-color: rgba(244,63,94,0.25); }
+
+    /* SVG icon helpers */
+    .svg-icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -3px; }
+    .svg-icon-lg { width: 36px; height: 36px; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ State Switcher Bar ══════════ -->
+<div class="state-bar">
+  <span class="label">Mockup State:</span>
+  <button class="state-btn active" onclick="switchState('initial')">① Initial</button>
+  <button class="state-btn" onclick="switchState('loading')">② Loading</button>
+  <button class="state-btn" onclick="switchState('success')">③ Accepted ✓</button>
+  <button class="state-btn" onclick="switchState('error')">④ Error ✗</button>
+  <button class="state-btn" onclick="switchState('empty')">⑤ Empty Data</button>
+</div>
+
+<!-- ══════════ Navbar ══════════ -->
+<nav class="navbar">
+  <div class="brand">
+    <!-- Code bracket icon -->
+    <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    AlgoPlace
+  </div>
+  <div class="user">
+    <span style="font-size:12px; color:var(--fg-dim)">student_user</span>
+    <div class="avatar">SU</div>
+  </div>
+</nav>
+
+<!-- ══════════ Workspace ══════════ -->
+<div class="workspace">
+
+  <!-- ──── Left Pane: Problem Description ──── -->
+  <div class="pane-left">
+    <div class="tab-bar">
+      <button class="tab-btn active">
+        <svg class="svg-icon" viewBox="0 0 24 24" style="margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Description
+      </button>
+      <button class="tab-btn">
+        <svg class="svg-icon" viewBox="0 0 24 24" style="margin-right:4px"><polyline points="12 8 12 12 14 14"/><circle cx="12" cy="12" r="10"/></svg>
+        Submissions
+      </button>
+    </div>
+
+    <div class="problem-content">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+        <h1>1. Two Sum</h1>
+        <span class="badge badge-easy">Easy</span>
+      </div>
+      <div class="category-label">Arrays &amp; Hashing</div>
+
+      <div class="desc">Given an array of integers <code>nums</code> and an integer <code>target</code>, return indices of the two numbers such that they add up to <code>target</code>.
+
+You may assume that each input would have exactly one solution, and you may not use the same element twice.
+
+You can return the answer in any order.</div>
+
+      <div class="section-title">Examples</div>
+
+      <div class="example-card">
+        <div><span class="label-io">Input: </span><span style="color:var(--fg)">nums = [2, 7, 11, 15], target = 9</span></div>
+        <div style="margin-top:4px"><span class="label-io">Output: </span><span class="val-output">[0, 1]</span></div>
+        <div style="margin-top:6px; padding-top:6px; border-top:1px solid var(--border); color:var(--fg-dim); font-size:11px; font-family:sans-serif">
+          <span style="font-weight:600; color:var(--fg-dim)">Explanation: </span>nums[0] + nums[1] == 9, so we return [0, 1].
+        </div>
+      </div>
+
+      <div class="example-card">
+        <div><span class="label-io">Input: </span><span style="color:var(--fg)">nums = [3, 2, 4], target = 6</span></div>
+        <div style="margin-top:4px"><span class="label-io">Output: </span><span class="val-output">[1, 2]</span></div>
+      </div>
+
+      <div class="section-title">Constraints</div>
+      <ul class="constraint-list">
+        <li>2 ≤ nums.length ≤ 10⁴</li>
+        <li>-10⁹ ≤ nums[i] ≤ 10⁹</li>
+        <li>-10⁹ ≤ target ≤ 10⁹</li>
+        <li>Only one valid answer exists.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ──── Right Pane: Editor + Console ──── -->
+  <div class="pane-right">
+
+    <!-- Toolbar -->
+    <div class="editor-toolbar">
+      <div class="toolbar-left">
+        <button class="btn" style="padding:4px 10px; gap:4px; font-size:11px; color:var(--fg-dim); border:none; background:none;">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="width:14px; height:14px"><polyline points="15 18 9 12 15 6"/></svg>
+          Problem List
+        </button>
+        <div style="width:1px; height:16px; background:var(--border)"></div>
+        <span style="font-size:12px; font-weight:600; color:var(--fg)">1. Two Sum</span>
+      </div>
+      <div class="toolbar-right">
+        <label for="lang-select" style="font-size:0; width:0; height:0; overflow:hidden; position:absolute">Language</label>
+        <select id="lang-select" class="lang-select" aria-label="Programming language">
+          <option>C++ (GCC 13)</option>
+          <option>Python 3.12</option>
+          <option>JavaScript (Node.js)</option>
+        </select>
+        <button class="small-btn" title="Reset to starter code" aria-label="Reset to starter code">
+          <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+        </button>
+
+        <!-- Run button -->
+        <button id="btn-run" class="btn" aria-label="Run code on sample tests">
+          <svg class="svg-icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3" fill="currentColor" stroke="none"/></svg>
+          <span id="btn-run-text">Run</span>
+        </button>
+
+        <!-- Submit button -->
+        <button id="btn-submit" class="btn btn-primary" aria-label="Submit solution for judging">
+          <svg class="svg-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <span id="btn-submit-text">Submit</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Code Editor (static mockup) -->
+    <div class="editor-area">
+      <pre><span class="line-no"> 1</span><span class="kw">#include</span> <span class="st">&lt;iostream&gt;</span>
+<span class="line-no"> 2</span><span class="kw">#include</span> <span class="st">&lt;vector&gt;</span>
+<span class="line-no"> 3</span><span class="kw">#include</span> <span class="st">&lt;unordered_map&gt;</span>
+<span class="line-no"> 4</span>
+<span class="line-no"> 5</span><span class="kw">using namespace</span> <span class="tp">std</span>;
+<span class="line-no"> 6</span>
+<span class="line-no"> 7</span><span class="tp">vector</span>&lt;<span class="tp">int</span>&gt; <span class="fn">twoSum</span>(<span class="tp">vector</span>&lt;<span class="tp">int</span>&gt;&amp; <span class="nb">nums</span>, <span class="tp">int</span> <span class="nb">target</span>) {
+<span class="line-no"> 8</span>    <span class="tp">unordered_map</span>&lt;<span class="tp">int</span>, <span class="tp">int</span>&gt; <span class="nb">seen</span>;
+<span class="line-no"> 9</span>    <span class="kw">for</span> (<span class="tp">int</span> <span class="nb">i</span> = <span class="nb">0</span>; <span class="nb">i</span> &lt; <span class="nb">nums</span>.<span class="fn">size</span>(); <span class="nb">i</span>++) {
+<span class="line-no">10</span>        <span class="tp">int</span> <span class="nb">complement</span> = <span class="nb">target</span> - <span class="nb">nums</span>[<span class="nb">i</span>];
+<span class="line-no">11</span>        <span class="kw">if</span> (<span class="nb">seen</span>.<span class="fn">count</span>(<span class="nb">complement</span>))
+<span class="line-no">12</span>            <span class="kw">return</span> {<span class="nb">seen</span>[<span class="nb">complement</span>], <span class="nb">i</span>};
+<span class="line-no">13</span>        <span class="nb">seen</span>[<span class="nb">nums</span>[<span class="nb">i</span>]] = <span class="nb">i</span>;
+<span class="line-no">14</span>    }
+<span class="line-no">15</span>    <span class="kw">return</span> {};
+<span class="line-no">16</span>}
+<span class="line-no">17</span>
+<span class="line-no">18</span><span class="tp">int</span> <span class="fn">main</span>() {
+<span class="line-no">19</span>    <span class="cm">// Read input and call twoSum</span>
+<span class="line-no">20</span>    <span class="kw">return</span> <span class="nb">0</span>;
+<span class="line-no">21</span>}</pre>
+    </div>
+
+    <!-- Console / Test Result Area -->
+    <div class="console-area">
+      <div class="console-tabs">
+        <button class="console-tab" id="ctab-testcase" onclick="showConsoleTab('testcase')">
+          <svg class="svg-icon" viewBox="0 0 24 24" style="margin-right:4px; width:13px; height:13px"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          Testcase
+        </button>
+        <button class="console-tab" id="ctab-result" onclick="showConsoleTab('result')">
+          Test Result
+          <span id="result-dot" style="display:none; width:7px; height:7px; border-radius:50%; margin-left:6px"></span>
+        </button>
+      </div>
+
+      <div class="console-body" id="console-body">
+
+        <!-- ① INITIAL: Show test case inputs -->
+        <div id="state-initial">
+          <div class="tc-tabs">
+            <button class="tc-tab active">Case 1</button>
+            <button class="tc-tab">Case 2</button>
+          </div>
+          <div class="io-label">Input:</div>
+          <div class="io-block">nums = [2, 7, 11, 15], target = 9</div>
+          <div class="io-label">Expected Output:</div>
+          <div class="io-block" style="color:var(--emerald-400)">[0, 1]</div>
+        </div>
+
+        <!-- ② LOADING: Spinner -->
+        <div id="state-loading" class="hidden">
+          <div class="spinner-wrap">
+            <div class="spinner"></div>
+            <div style="font-size:12px">Compiling and judging against hidden test suite…</div>
+          </div>
+        </div>
+
+        <!-- ③ SUCCESS: Accepted verdict -->
+        <div id="state-success" class="hidden">
+          <div class="verdict-banner">
+            <div class="verdict-status accepted">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="color:var(--emerald-400)"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Accepted
+            </div>
+            <div class="verdict-metrics">
+              <span>⏱ 4 ms</span>
+              <span>💾 3.2 MB</span>
+            </div>
+          </div>
+          <div style="font-size:12px; color:var(--fg-dim); font-weight:500; margin-bottom:10px">
+            Test Cases Passed: 42 / 42
+          </div>
+          <div class="tc-result">
+            <div class="tc-result-header"><span class="tc-name">Case 1</span><span class="tc-pill passed">PASSED</span></div>
+            <div style="color:var(--fg-dim)">Input: nums = [2, 7, 11, 15], target = 9</div>
+            <div style="color:var(--emerald-400)">Expected: [0, 1]</div>
+            <div style="color:var(--fg)">Output: [0, 1]</div>
+          </div>
+          <div class="tc-result">
+            <div class="tc-result-header"><span class="tc-name">Case 2</span><span class="tc-pill passed">PASSED</span></div>
+            <div style="color:var(--fg-dim)">Input: nums = [3, 2, 4], target = 6</div>
+            <div style="color:var(--emerald-400)">Expected: [1, 2]</div>
+            <div style="color:var(--fg)">Output: [1, 2]</div>
+          </div>
+        </div>
+
+        <!-- ④ ERROR: Wrong Answer / Runtime Error -->
+        <div id="state-error" class="hidden">
+          <div class="verdict-banner">
+            <div class="verdict-status wrong">
+              <svg class="svg-icon" viewBox="0 0 24 24" style="color:var(--rose-400)"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              Wrong Answer
+            </div>
+            <div class="verdict-metrics">
+              <span>⏱ 8 ms</span>
+              <span>💾 3.4 MB</span>
+            </div>
+          </div>
+          <div style="font-size:12px; color:var(--fg-dim); font-weight:500; margin-bottom:10px">
+            Test Cases Passed: 1 / 42
+          </div>
+          <div class="error-alert">
+            <svg class="svg-icon" viewBox="0 0 24 24" style="flex-shrink:0; color:var(--rose-400); width:18px; height:18px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div>
+              <div style="font-weight:600; margin-bottom:4px">Test case 2 failed</div>
+              <div style="color:var(--fg-dim)">Expected output <code style="color:var(--emerald-400)">[1, 2]</code> but received <code style="color:var(--rose-400)">[0, 1]</code>. Check your solution logic and try again.</div>
+              <button class="retry-btn">↻ Retry Submission</button>
+            </div>
+          </div>
+          <div class="tc-result">
+            <div class="tc-result-header"><span class="tc-name">Case 1</span><span class="tc-pill passed">PASSED</span></div>
+            <div style="color:var(--fg-dim)">Input: nums = [2, 7, 11, 15], target = 9</div>
+            <div style="color:var(--emerald-400)">Expected: [0, 1]</div>
+            <div style="color:var(--fg)">Output: [0, 1]</div>
+          </div>
+          <div class="tc-result">
+            <div class="tc-result-header"><span class="tc-name">Case 2</span><span class="tc-pill failed">FAILED</span></div>
+            <div style="color:var(--fg-dim)">Input: nums = [3, 2, 4], target = 6</div>
+            <div style="color:var(--emerald-400)">Expected: [1, 2]</div>
+            <div style="color:var(--rose-400)">Output: [0, 1]</div>
+          </div>
+        </div>
+
+        <!-- ⑤ EMPTY: No results yet -->
+        <div id="state-empty" class="hidden">
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div style="font-size:13px; font-weight:500; color:var(--fg-muted)">No test results yet</div>
+            <div style="font-size:12px; color:var(--fg-dim); max-width:280px">Run your code or submit a solution to view execution feedback here.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ Success Modal (shown for state ③) ══════════ -->
+<div class="modal-overlay hidden" id="success-modal">
+  <div class="modal-card">
+    <div class="modal-icon">
+      <svg class="svg-icon svg-icon-lg" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    </div>
+    <div class="modal-badge">🎉 Accepted Solution</div>
+    <h2>Task Solved!</h2>
+    <p>Congratulations! Your solution for <strong style="color:var(--fg)">Two Sum</strong> passed all 42 test cases.</p>
+    <div class="modal-metrics">
+      <div><div class="m-label">Runtime</div><div class="m-value">4 ms</div></div>
+      <div><div class="m-label">Memory</div><div class="m-value">3.2 MB</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="document.getElementById('success-modal').classList.add('hidden')">
+        <svg class="svg-icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        All Problems
+      </button>
+      <button class="btn btn-primary" onclick="document.getElementById('success-modal').classList.add('hidden')">
+        Next Task →
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const states = ['initial', 'loading', 'success', 'error', 'empty'];
+
+  function switchState(state) {
+    // Update state buttons
+    document.querySelectorAll('.state-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.state-btn').forEach(btn => {
+      if (btn.textContent.toLowerCase().includes(state) ||
+          (state === 'success' && btn.textContent.includes('Accepted')) ||
+          (state === 'error' && btn.textContent.includes('Error')) ||
+          (state === 'empty' && btn.textContent.includes('Empty'))) {
+        btn.classList.add('active');
+      }
+    });
+
+    // Hide all state panels
+    states.forEach(s => {
+      const el = document.getElementById('state-' + s);
+      if (el) el.classList.add('hidden');
+    });
+
+    // Show active state panel
+    const panel = document.getElementById('state-' + state);
+    if (panel) panel.classList.remove('hidden');
+
+    // Update buttons
+    const runBtn = document.getElementById('btn-run');
+    const submitBtn = document.getElementById('btn-submit');
+    const runText = document.getElementById('btn-run-text');
+    const submitText = document.getElementById('btn-submit-text');
+    const resultDot = document.getElementById('result-dot');
+
+    // Reset buttons
+    runBtn.disabled = false;
+    submitBtn.disabled = false;
+    runText.textContent = 'Run';
+    submitText.textContent = 'Submit';
+
+    // Switch to result tab for non-initial states
+    if (state !== 'initial') {
+      showConsoleTab('result');
+    } else {
+      showConsoleTab('testcase');
+    }
+
+    // State-specific adjustments
+    if (state === 'loading') {
+      runBtn.disabled = true;
+      submitBtn.disabled = true;
+      submitText.textContent = 'Evaluating…';
+    }
+
+    // Result dot
+    resultDot.style.display = 'none';
+    if (state === 'success') {
+      resultDot.style.display = 'inline-block';
+      resultDot.style.background = 'var(--emerald-400)';
+    } else if (state === 'error') {
+      resultDot.style.display = 'inline-block';
+      resultDot.style.background = 'var(--rose-500)';
+    }
+
+    // Success modal
+    const modal = document.getElementById('success-modal');
+    if (state === 'success') {
+      modal.classList.remove('hidden');
+    } else {
+      modal.classList.add('hidden');
+    }
+  }
+
+  function showConsoleTab(tab) {
+    document.getElementById('ctab-testcase').classList.toggle('active', tab === 'testcase');
+    document.getElementById('ctab-result').classList.toggle('active', tab === 'result');
+  }
+
+  // Initial state
+  switchState('initial');
+</script>
+
+</body>
+</html>
